@@ -25,6 +25,9 @@ struct Token {
 // 現在着目しているトークン
 Token *token;
 
+// user入力
+char *user_input;
+
 // エラーを報告するための関数
 // printfと同じ引数を取る
 void error(char *fmt, ...) {
@@ -33,6 +36,19 @@ void error(char *fmt, ...) {
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
+}
+
+void error_at(char* loc, char* fmt, ...) {
+    va_list ap;
+  va_start(ap, fmt);
+    int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, " "); // pos個の空白を出力
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
@@ -48,7 +64,7 @@ bool consume(char op) {
 // それ以外の場合にはエラーを報告する。
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
-    error("'%c'ではありません", op);
+    error_at(token->str, "'%c'ではありません", op);
   token = token->next;
 }
 
@@ -56,7 +72,7 @@ void expect(char op) {
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
   if (token->kind != TK_NUM)
-    error("数ではありません");
+    error_at(token->str,"数ではありません");
   int val = token->val;
   token = token->next;
   return val;
@@ -67,7 +83,9 @@ bool at_eof() {
 }
 
 // 新しいトークンを作成してcurに繋げる
+// MEMO: 具体的にはcurのnextを埋める、と言う作業をしてる
 Token *new_token(TokenKind kind, Token *cur, char *str) {
+  // token毎にcallocでmemを割り当てる
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->str = str;
@@ -76,12 +94,14 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
 }
 
 // 入力文字列pをトークナイズしてそれを返す
-Token *tokenize(char *p) {
+Token *tokenize() {
+  char *p = user_input;
   Token head;
   head.next = NULL;
   Token *cur = &head;
 
   // MEMO: NULL文字までloop
+  // MEMO: ここからはcurのみを書き換える。
   while (*p) {
     // 空白文字をスキップ
     if (isspace(*p)) {
@@ -103,7 +123,7 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    error("トークナイズできません");
+    error_at(p,"トークナイズできません");
   }
 
   new_token(TK_EOF, cur, p);
@@ -119,7 +139,8 @@ int main(int argc, char **argv) {
 
   // トークナイズする
   // MEMO: 多分こいつがリストの先頭を指してるはずなんだが。。
-  token = tokenize(argv[1]);
+  user_input = argv[1];
+  token = tokenize();
 
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
