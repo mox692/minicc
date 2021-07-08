@@ -67,7 +67,6 @@ void error_at(char* loc, char* fmt, ...) {
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
-
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
@@ -131,7 +130,6 @@ Token *tokenize() {
     if (strchr("+-*/()", *p)){
       // MEMO: なぜp++ ?
       cur = new_token(TK_RESERVED, cur, p++);
-      cur->val = strtol(p, &p, 10);
       continue;
     }
 
@@ -160,11 +158,12 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   return node;
 }
 
+
 // 数値をNum Nodeとして返す.
-Node *new_node_num(int num) {
+Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(int));
   node->kind = ND_NUM;
-  node->val = num;
+  node->val = val;
   return node;
 }
 
@@ -195,10 +194,9 @@ Node *mul() {
     } else if(consume('/')) {
       node = new_node(ND_DIV, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
     } else {
-      break;
+      return node;
     }
   }
-  return node;
 }
 
 // expr Nodeを返す関数.
@@ -211,10 +209,9 @@ Node *expr() {
     } else if(consume('-')) {
       node = new_node(ND_SUB, node, mul());
     } else {
-      break;
+      return node;
     }
   }
-  return node;
 }
 
 // Nodeを引数にとり、そのNodeに対応したasmを標準出力する
