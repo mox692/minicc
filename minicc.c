@@ -183,10 +183,21 @@ Node *primary() {
   return new_node_num(expect_number());
 }
 
+// unary Nodeを返す関数.
+Node *unary() {
+  if(consume('+')) {
+    return primary();
+  } else if(consume('-')) {
+    // 引き算として扱ってる
+    return new_node(ND_SUB, new_node_num(0),primary());
+  }
+  return primary();
+}
+
 // mul Nodeを返す関数.
 // *か/のみのtokenを読み進め、それ以外のtokenが出現した場合はbreakする
 Node *mul() {
-  Node *node = primary();
+  Node *node = unary();
 
   for(;;) {
     if(consume('*')) {
