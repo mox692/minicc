@@ -22,10 +22,30 @@ struct Token {
   char *str;      // トークン文字列
 };
 
-char *user_input;
-
 // 現在着目しているトークン
 Token *token;
+
+// user入力
+char *user_input;
+
+typedef enum {
+  ND_ADD,
+  ND_SUB,
+  ND_MUL,
+  ND_DIV,
+  ND_NUM,
+} NodeKind;
+
+// MEMO: なぜこれがいるのだろう
+typedef struct Node Node;
+
+struct Node {
+  NodeKind kind;
+  Node *lhs;
+  Node *rhs;
+  int val;
+};
+
 
 // エラーを報告するための関数
 // printfと同じ引数を取る
@@ -129,80 +149,27 @@ Token *tokenize() {
   return head.next;
 }
 
-typedef enum {
-  ND_ADD,
-  ND_SUB,
-  ND_MUL,
-  ND_DIV,
-  ND_NUM,
-} NodeKind;
-
-// MEMO: なぜこれがいるのだろう
-typedef struct Node Node;
-struct Node {
-  NodeKind kind;
-  Node *lhs;
-  Node *rhs;
-  int val;
-};
-
 // Num Node以外のNodeを受け取り、右辺値と左辺値から新しいNodeを生成する.
-Node *new_node(NodeKind kind) {
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
+  node->lhs = lhs;
+  node->rhs = rhs;
   node->kind = kind;
   return node;
 }
 
-Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
-  Node *node = new_node(kind);
-  node->lhs = lhs;
-  node->rhs = rhs;
-  return node;
-}
 
 // 数値をNum Nodeとして返す.
-Node *new_num(int val) {
-  Node *node = new_node(ND_NUM);
+Node *new_node_num(int val) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_NUM;
   node->val = val;
   return node;
 }
 
 Node *expr();
-Node *mul();
-Node *primary();
-
-// expr Nodeを返す関数.
-Node *expr() {
-  Node *node = mul();
-
-  for(;;) {
-    if(consume('+')) {
-      node = new_binary(ND_ADD, node, mul());
-    } else if(consume('-')) {
-      node = new_binary(ND_SUB, node, mul());
-    } else {
-      return node;
-    }
-  }
-}
 
 // primary Nodeを返す関数.
-// mul Nodeを返す関数.
-// *か/のみのtokenを読み進め、それ以外のtokenが出現した場合はbreakする
-Node *mul() {
-  Node *node = primary();
-
-  for(;;) {
-    if(consume('*')) {
-      node = new_binary(ND_MUL, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
-    } else if(consume('/')) {
-      node = new_binary(ND_DIV, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
-    } else {
-      return node;
-    }
-  }
-}
-
 Node *primary() {
   // primaryが処理するのはnumか(expr)の2パターンである
   
@@ -213,13 +180,42 @@ Node *primary() {
     return node;
   }
   // それ以外の時(num)
-  return new_num(expect_number());
+  return new_node_num(expect_number());
 }
 
+// mul Nodeを返す関数.
+// *か/のみのtokenを読み進め、それ以外のtokenが出現した場合はbreakする
+Node *mul() {
+  Node *node = primary();
 
+  for(;;) {
+    if(consume('*')) {
+      node = new_node(ND_MUL, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
+    } else if(consume('/')) {
+      node = new_node(ND_DIV, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
+    } else {
+      return node;
+    }
+  }
+}
+
+// expr Nodeを返す関数.
+Node *expr() {
+  Node *node = mul();
+
+  for(;;) {
+    if(consume('+')) {
+      node = new_node(ND_ADD, node, mul());
+    } else if(consume('-')) {
+      node = new_node(ND_SUB, node, mul());
+    } else {
+      return node;
+    }
+  }
+}
 
 // Nodeを引数にとり、そのNodeに対応したasmを標準出力する
-void gen(Node *node) {
+void genAsm(Node *node) {
   // 1.ND_NUMのとき(最後はここにきて処理が終了するはず)
   if (node->kind == ND_NUM) {
     printf("  push %d\n", node->val);
@@ -228,8 +224,8 @@ void gen(Node *node) {
 
   // 2.ND_NUMでない時
   // 左辺Nodeと右辺Nodeに再起的にgenAsmをかけてasmを生成
-  gen(node->lhs);
-  gen(node->rhs);
+  genAsm(node->lhs);
+  genAsm(node->rhs);
 
   printf("  pop rdi\n");
   printf("  pop rax\n");
@@ -269,7 +265,7 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   // asmコードを出力.
-  gen(node);
+  genAsm(node);
 
   printf("  pop rax\n");
   printf("  ret\n");
