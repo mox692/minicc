@@ -147,19 +147,22 @@ struct Node {
 };
 
 // Num Node以外のNodeを受け取り、右辺値と左辺値から新しいNodeを生成する.
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
-  node->lhs = lhs;
-  node->rhs = rhs;
   node->kind = kind;
   return node;
 }
 
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = new_node(kind);
+  node->lhs = lhs;
+  node->rhs = rhs;
+  return node;
+}
 
 // 数値をNum Nodeとして返す.
-Node *new_node_num(int val) {
-  Node *node = calloc(1, sizeof(int));
-  node->kind = ND_NUM;
+Node *new_num(int val) {
+  Node *node = new_node(ND_NUM);
   node->val = val;
   return node;
 }
@@ -174,9 +177,9 @@ Node *expr() {
 
   for(;;) {
     if(consume('+')) {
-      node = new_node(ND_ADD, node, mul());
+      node = new_binary(ND_ADD, node, mul());
     } else if(consume('-')) {
-      node = new_node(ND_SUB, node, mul());
+      node = new_binary(ND_SUB, node, mul());
     } else {
       return node;
     }
@@ -191,9 +194,9 @@ Node *mul() {
 
   for(;;) {
     if(consume('*')) {
-      node = new_node(ND_MUL, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
+      node = new_binary(ND_MUL, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
     } else if(consume('/')) {
-      node = new_node(ND_DIV, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
+      node = new_binary(ND_DIV, node, primary()); // 第3引数でprimary()を呼んで、さらにtokenを読み進めてる点に注意.
     } else {
       return node;
     }
@@ -210,13 +213,13 @@ Node *primary() {
     return node;
   }
   // それ以外の時(num)
-  return new_node_num(expect_number());
+  return new_num(expect_number());
 }
 
 
 
 // Nodeを引数にとり、そのNodeに対応したasmを標準出力する
-void genAsm(Node *node) {
+void gen(Node *node) {
   // 1.ND_NUMのとき(最後はここにきて処理が終了するはず)
   if (node->kind == ND_NUM) {
     printf("  push %d\n", node->val);
@@ -225,8 +228,8 @@ void genAsm(Node *node) {
 
   // 2.ND_NUMでない時
   // 左辺Nodeと右辺Nodeに再起的にgenAsmをかけてasmを生成
-  genAsm(node->lhs);
-  genAsm(node->rhs);
+  gen(node->lhs);
+  gen(node->rhs);
 
   printf("  pop rdi\n");
   printf("  pop rax\n");
@@ -266,7 +269,7 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   // asmコードを出力.
-  genAsm(node);
+  gen(node);
 
   printf("  pop rax\n");
   printf("  ret\n");
