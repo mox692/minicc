@@ -104,7 +104,7 @@ int expect_number() {
 
 bool at_eof() { return token->kind == TK_EOF; }
 
-bool startswith(char *p, char *q) { return memcmp(p, q, strlen(p)) == 0; }
+bool startswith(char *p, char *q, int size) { return memcmp(p, q, size) == 0; }
 
 // 新しいトークンを作成してcurに繋げる
 // MEMO: 具体的にはcurのnextを埋める、と言う作業をしてる
@@ -135,12 +135,13 @@ Token *tokenize() {
     }
 
     // 複数文字tokenかどうか
-    if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") ||
-        startswith(p, ">=")) {
+    if (startswith(p, "==", 2) || startswith(p, "!=", 2) ||
+        startswith(p, "<=", 2) || startswith(p, ">=", 2)) {
       cur = new_token(TK_RESERVED, cur, p, 2);
+      p += 2;
     }
 
-    if (strchr("+-*/()", *p)) {
+    if (strchr("+-*/()<>", *p)) {
       // MEMO: なぜp++ ?
       // MEMO:
       // 引数に渡したcurのアドレスが返り値で帰ってきてるcurのnextのアドレスになっている
@@ -257,9 +258,9 @@ Node *relational() {
     } else if (consume("<=")) {
       node = new_node(ND_LE, node, add());
     } else if (consume(">")) {
-      node = new_node(ND_LT, node, add());
+      node = new_node(ND_LT, add(), node);
     } else if (consume(">=")) {
-      node = new_node(ND_LE, node, add());
+      node = new_node(ND_LE, add(), node);
     } else {
       return node;
     }
