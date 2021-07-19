@@ -47,7 +47,7 @@ Token *skip(Token *tok, char *op) {
   return tok->next;
 }
 
-// Create a new token.
+//
 static Token *new_token(TokenKind kind, char *start, char *end) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
@@ -69,24 +69,28 @@ static int read_punct(char *p) {
   return ispunct(*p) ? 1 : 0;
 }
 
-// Tokenize `current_input` and returns new tokens.
+// tokenize
 Token *tokenize(char *p) {
   current_input = p;
   Token head = {};
   Token *cur = &head;
 
   while (*p) {
-    // Skip whitespace characters.
+    // whitespaceは飛ばす
     if (isspace(*p)) {
       p++;
       continue;
     }
 
-    // Numeric literal
+    // 数値をtokenにする
     if (isdigit(*p)) {
+      // MEMO: なんでcur->nextにもいれるのか
       cur = cur->next = new_token(TK_NUM, p, p);
       char *q = p;
+      // pを進める.
+      // 数値部分だけを読んでいき、読み進めた先のpoterが&pに入る
       cur->val = strtoul(p, &p, 10);
+      // 数値の場合はnew_tokenの中でlenを計算しない
       cur->len = p - q;
       continue;
     }
@@ -95,6 +99,7 @@ Token *tokenize(char *p) {
     int punct_len = read_punct(p);
     if (punct_len) {
       cur = cur->next = new_token(TK_PUNCT, p, p + punct_len);
+      // pを進める.
       p += cur->len;
       continue;
     }
