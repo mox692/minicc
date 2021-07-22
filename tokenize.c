@@ -35,12 +35,13 @@ void error_tok(Token *tok, char *fmt, ...) {
   verror_at(tok->loc, fmt, ap);
 }
 
-// Consumes the current token if it matches `op`.
+// boolを返すだけで,tokは進めてないことに注意
 bool equal(Token *tok, char *op) {
   return memcmp(tok->loc, op, tok->len) == 0 && op[tok->len] == '\0';
 }
 
 // Ensure that the current token is `op`.
+// こっちはtokをopの1つ後に進める
 Token *skip(Token *tok, char *op) {
   if (!equal(tok, op))
     error_tok(tok, "expected '%s'", op);

@@ -14,6 +14,7 @@ static void pop(char *arg) {
 
 static void gen_expr(Node *node) {
   switch (node->kind) {
+  // 単項の場合はここで処理
   case ND_NUM:
     printf("  mov $%d, %%rax\n", node->val);
     return;
@@ -23,6 +24,7 @@ static void gen_expr(Node *node) {
     return;
   }
 
+  // 2項以上の場合はここから
   gen_expr(node->rhs);
   push();
   gen_expr(node->lhs);

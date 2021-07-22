@@ -128,12 +128,14 @@ static Node *mul(Token **rest, Token *tok) {
 
 // unary = ("+" | "-") unary
 //       | primary
+// 単項演算子を扱う
 static Node *unary(Token **rest, Token *tok) {
   if (equal(tok, "+"))
-    return unary(rest, tok->next);
+    return unary(rest, tok->next); // tokをここで進めてることに注意
 
   if (equal(tok, "-"))
-    return new_unary(ND_NEG, unary(rest, tok->next));
+    return new_unary(ND_NEG,
+                     unary(rest, tok->next)); // tokをここで進めてることに注意
 
   return primary(rest, tok);
 }
