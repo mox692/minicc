@@ -25,7 +25,7 @@ static void gen_expr(Node *node) {
   }
 
   // 2項以上の場合はここから
-  gen_expr(node->rhs);
+  gen_expr(node->rhs); // MEMO: 何でrightから呼んでるのだろう...
   push();
   gen_expr(node->lhs);
   pop("%rdi");
