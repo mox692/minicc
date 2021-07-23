@@ -49,6 +49,7 @@ typedef enum {
   ND_LT,  // <
   ND_LE,  // <=
   ND_NUM, // Integer
+  ND_EXPR_STMT, // stmt
 } NodeKind;
 
 // AST node type
@@ -57,6 +58,7 @@ struct Node {
   NodeKind kind; // Node kind
   Node *lhs;     // Left-hand side
   Node *rhs;     // Right-hand side
+  Node *next;    // Next node
   int val;       // Used if kind == ND_NUM
 };
 
