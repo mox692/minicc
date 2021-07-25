@@ -50,6 +50,8 @@ typedef enum {
   ND_LE,  // <=
   ND_NUM, // Integer
   ND_EXPR_STMT, // stmt
+  ND_ASSIGN,    // =
+  ND_VAR,       // Variable
 } NodeKind;
 
 // AST node type
@@ -60,6 +62,7 @@ struct Node {
   Node *rhs;     // Right-hand side
   Node *next;    // Next node
   int val;       // Used if kind == ND_NUM
+  char name;     // Used if kind == ND_VAR
 };
 
 Node *parse(Token *tok);
