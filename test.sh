@@ -50,4 +50,10 @@ assert 0 '1>=2;'
 assert 3 '0; 1; 3;'
 assert 0 '1>=1; 1>=0; 1>=2;'
 assert 46 '42==42; 46;'
+
+# add single assignment
+assert 3 'a=3; a;'
+assert 8 'a=3; z=5; a+z;'
+assert 6 'a=b=3; a+b;'
+
 echo OK
