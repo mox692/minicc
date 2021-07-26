@@ -12,11 +12,14 @@ static void pop(char *arg) {
   depth--;
 }
 
+static int align_to(int n, int align) {
+  return (n + align - 1) / align * align;
+}
+
 static void gen_addr(Node *node) {
   // 変数名(a-zの1文字)のoffsetを計算、そのアドレス値をraxに入れるアセンブリ命令を出力
   if (node->kind == ND_VAR) {
-    int offset = (node->name - 'a' + 1) * 8;
-    printf("  lea %d(%%rbp), %%rax\n", -offset);
+    printf("  lea %d(%%rbp), %%rax\n", node->var->offset);
     return;
   }
 
@@ -93,7 +96,6 @@ static void gen_expr(Node *node) {
   error("invalid expression");
 }
 
-
 static void gen_stmt(Node *node) {
   if (node->kind == ND_EXPR_STMT) {
     // 左辺を展開(new_unartyがlhsに代入してるので。)
@@ -105,16 +107,31 @@ static void gen_stmt(Node *node) {
   error("invalid statement");
 }
 
-void codegen(Node *node) {
+// Function構造体を受け取り、そのFunctionに含まれているlocalvalのoffsetを設定する
+// ひとまずどの変数も8byteとして確保している
+static void assign_lvar_offsets(Function *prog) {
+  int offset = 0;
+  for (Obj *var = prog->locals; var; var = var->next) {
+    offset += 8;
+    var->offset = -offset;
+  }
+  prog->stack_size = align_to(offset, 16); // MEMO: なんで16byteのallign?
+}
+
+// 1つの関数を受け取り、その関数に対応するassemblyを吐く
+void codegen(Function *prog) {
+  // local valの領域を設定
+  assign_lvar_offsets(prog);
+
   printf("  .globl main\n");
   printf("main:\n");
 
   // Prologue
   printf("  push %%rbp\n");
   printf("  mov %%rsp, %%rbp\n");
-  printf("  sub $208, %%rsp\n");
+  printf("  sub $%d, %%rsp\n", prog->stack_size); // stackサイズ分だけ押し下げる
 
-  for (Node *n = node; n; n = n->next) {
+  for (Node *n = prog->body; n; n = n->next) {
     // stmtごとに.nextでNodeを進めていく
     gen_stmt(n);
     assert(depth == 0);

@@ -12,7 +12,8 @@ int main(int argc, char **argv) {
     return 1;
   }
   Token *tok = tokenize(argv[1]);
-  Node *node = parse(tok);
-  codegen(node);
+  Function *prog = parse(tok);
+  // 関数ごとに(今は1つだが)codegenする.
+  codegen(prog);
   return 0;
 }
