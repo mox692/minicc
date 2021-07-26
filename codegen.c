@@ -12,9 +12,8 @@ static void pop(char *arg) {
   depth--;
 }
 
-// Compute the absolute address of a given node.
-// It's an error if a given node does not reside in memory.
 static void gen_addr(Node *node) {
+  // 変数名(a-zの1文字)のoffsetを計算、そのアドレス値をraxに入れるアセンブリ命令を出力
   if (node->kind == ND_VAR) {
     int offset = (node->name - 'a' + 1) * 8;
     printf("  lea %d(%%rbp), %%rax\n", -offset);
@@ -39,6 +38,11 @@ static void gen_expr(Node *node) {
     printf("  mov (%%rax), %%rax\n");
     return;
   case ND_ASSIGN:
+    // 1.(左辺)変数に割り当てられたaddrをraxに格納&stackにpush(gen_addr(node->lhs);)
+    // 2.右辺にある式を評価し、結果をraxに入れておく(gen_expr(node->rhs);)
+    // 3.stackのtopにある変数のaddrをrdiにpop
+    // 4.mov %%rax, (%%rdi)で右辺値を左辺変数のaddrに代入
+    // (詳しくは出力してるアセンブリを参照)
     gen_addr(node->lhs);
     push();
     gen_expr(node->rhs);
@@ -111,10 +115,12 @@ void codegen(Node *node) {
   printf("  sub $208, %%rsp\n");
 
   for (Node *n = node; n; n = n->next) {
+    // stmtごとに.nextでNodeを進めていく
     gen_stmt(n);
     assert(depth == 0);
   }
 
+  // Epilogue
   printf("  mov %%rbp, %%rsp\n");
   printf("  pop %%rbp\n");
   printf("  ret\n");
