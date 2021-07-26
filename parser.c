@@ -213,6 +213,7 @@ static Node *primary(Token **rest, Token *tok) {
   error_tok(tok, "expected an expression");
 }
 
+// tokenを読んでFunctionを返す
 Function *parse(Token *tok) {
   Node head = {};
   Node *cur = &head;

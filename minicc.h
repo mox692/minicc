@@ -45,17 +45,14 @@ struct Obj {
   int offset; // Offset from RBP
 };
 
-// Function
+// Functionを表し、独自のlocal val(と、それに対応したstacksize)を保有する.
+// 複数のNodeを持ちうる.
 typedef struct Function Function;
 struct Function {
-  Node *body;
-  Obj *locals;
+  Node *body;  // 関数body
+  Obj *locals; // そのscopeにおける変数
   int stack_size;
 };
-
-//
-// parse.c
-//
 
 typedef enum {
   ND_ADD,       // +

@@ -12,8 +12,6 @@ static void pop(char *arg) {
   depth--;
 }
 
-// Round up `n` to the nearest multiple of `align`. For instance,
-// align_to(5, 8) returns 8 and align_to(11, 8) returns 16.
 static int align_to(int n, int align) {
   return (n + align - 1) / align * align;
 }
@@ -109,17 +107,20 @@ static void gen_stmt(Node *node) {
   error("invalid statement");
 }
 
-// Assign offsets to local variables.
+// Function構造体を受け取り、そのFunctionに含まれているlocalvalのoffsetを設定する
+// ひとまずどの変数も8byteとして確保している
 static void assign_lvar_offsets(Function *prog) {
   int offset = 0;
   for (Obj *var = prog->locals; var; var = var->next) {
     offset += 8;
     var->offset = -offset;
   }
-  prog->stack_size = align_to(offset, 16);
+  prog->stack_size = align_to(offset, 16); // MEMO: なんで16byteのallign?
 }
 
+// 1つの関数を受け取り、その関数に対応するassemblyを吐く
 void codegen(Function *prog) {
+  // local valの領域を設定
   assign_lvar_offsets(prog);
 
   printf("  .globl main\n");
