@@ -178,7 +178,7 @@ static Node *primary(Token **rest, Token *tok) {
   }
 
   if (tok->kind == TK_IDENT) {
-    Node *node = new_var_node(*tok->loc);
+    Node *node = new_var_node(*tok->loc); // 現状では1文字変数のみをサポートしてるので、*tok.locがそのままnameになる
     *rest = tok->next;
     return node;
   }
@@ -195,7 +195,9 @@ static Node *primary(Token **rest, Token *tok) {
 Node *parse(Token *tok) {
   Node head = {};
   Node *cur = &head;
+
   while (tok->kind != TK_EOF)
+    // Nodeにもnextというfieldを持たせて、複数stmtの対応をしてる
     cur = cur->next = stmt(&tok, tok); // eofになったらcur.nextは代入されない。これがcodegenの終端条件になってる
   return head.next;
 }
